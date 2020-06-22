@@ -366,6 +366,76 @@
 //////////////////////////////////////////////////////////////////////
 //----------------------- EJEMPLO BASE -----------------------------//
 ////////////////////////////////////////////////////////////////////
+//import ddf.minim.*;
+//import ddf.minim.analysis.*;
+ 
+//Minim minim;
+//AudioPlayer groove;
+//AudioMetaData meta;
+//BeatDetect beat;
+//float yoff = 0.0;
+ 
+////---------------------------//
+//float y = 50.0;
+//float fast = 3.0;
+//float radio = 5.0;
+////---------------------------//
+ 
+ 
+ 
+ 
+//void setup()
+//{
+ 
+//size(640, 360, P3D);
+ 
+//minim = new Minim(this);
+//groove = minim.loadFile("song.mp3", 2048);
+//groove.play();
+//beat = new BeatDetect();
+//ellipseMode(CENTER);
+ 
+//}
+//void draw() 
+//{
+//background(#9C69D3);
+//beat.detect(groove.mix);
+//stroke(255);
+ 
+  
+//  // linea blanca 
+//  for(int i = 0; i < groove.bufferSize() - 1; i+=20)
+//  {
+    
+//     ellipse( i,200, groove.left.get(i)*100, groove.left.get(i)*100);
+//     ellipse( groove.left.get(i)*300, groove.left.get(i)*300,radio,radio);
+//    //line(100 + groove.left.get(i+1)*10, 100  + groove.left.get(i)*100,  130, 130);
+//    // line(100  + groove.left.get(i)*100, 0, 100 + groove.left.get(i+1)*10 ,200 );
+//     //line(i, 100  + groove.left.get(i)*100,  i+1, 100 + groove.left.get(i+1)*10);
+//  }
+  
+//fill(#1F0BDB);
+//beginShape();
+// float xoff = 0;
+//  for (float x = 0; x <= width; x += 10) {
+//    float y = map(noise(xoff, yoff), 10, 1, 0, 300);
+//    vertex(x, y); 
+//    xoff += 0.10;
+//  }
+//  yoff += 0.10;
+//  vertex(width, height);
+//  vertex(0, height);
+//  endShape(CLOSE);
+//}
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////
 import ddf.minim.*;
 import ddf.minim.analysis.*;
  
@@ -375,40 +445,158 @@ AudioMetaData meta;
 BeatDetect beat;
 float yoff = 0.0;
  
+//---------------------------//
+float y = 50.0;
+float fast = 3.0;
+float radio = 5.0;
+//---------------------------//
+float angle = 0.0;
+float X= 100;
+float Y= 70;
+float speedX = 0.0;
+float speedY = 0.0;
+float gravity = 0.1;
+float diam = 120;
+//==========================//
+FFT fft;
+float specLow = 0.03; // 3%
+float specMid = 0.125;  // 12.5%
+float specHi = 0.20;   // 20%
+
+float scoreLow = 0;
+float scoreMid = 0;
+float scoreHi = 0;
+
+float oldScoreLow = scoreLow;
+float oldScoreMid = scoreMid;
+float oldScoreHi = scoreHi;
+
+
+float scoreDecreaseRate = 25;
+
+
+
+
 void setup()
 {
- 
-size(640, 360, P3D);
- 
-minim = new Minim(this);
-groove = minim.loadFile("song.mp3", 2048);
-groove.play();
-beat = new BeatDetect();
-ellipseMode(CENTER);
- 
+   size(1000, 500,P3D);
+   fill(0,0,0);
+   rect(0,0,1000,500);
+   minim = new Minim(this);
+   groove = minim.loadFile("song.mp3", 2048);
+   fft = new FFT( groove.bufferSize(),  groove.sampleRate());
+   groove.play();
+   beat = new BeatDetect();   
+   surface.setResizable(true);
 }
-void draw() 
-{
-background(#9C69D3);
-beat.detect(groove.mix);
-stroke(255);
- 
-  for(int i = 0; i < groove.bufferSize() - 1; i++)
-  {
-    line(i, 50  + groove.left.get(i)*50,  i+1, 50  + groove.left.get(i+1)*50);
+
+
+void shapeX(int pX, int pY){
+ float scalar = sin(angle)+2;
+  if(angle>=26){
+    angle = 0.0;
   }
+  translate(pX,pY);
+  scalar = sin(angle)+2;
+  scale(scalar);
+  rotate(angle);
   
-fill(#1F0BDB);
-beginShape();
- float xoff = 0;
-  for (float x = 0; x <= width; x += 10) {
-    float y = map(noise(xoff, yoff), 10, 1, 0, 300);
-    vertex(x, y); 
-    xoff += 0.10;
-  }
-  yoff += 0.10;
-  vertex(width, height);
-  vertex(0, height);
-  endShape(CLOSE);
+  float R = map(scalar,1,3,0,220);
+  float G = map(scalar,1,3,10,120);
+  float B = map(scalar,1,3,220,20);
+  
+  fill(R,G,B);
+  strokeWeight(abs(0.01/scalar));
+  rect(-30,-30,70,70);
+  angle += 0.1;
+ 
 }
+
+
+
+
+
+void draw(){
+  //fft.forward(groove.mix);
+  //background(0);
+  beat.detect(groove.mix);
+  fft.forward(groove.mix);
+  
+  oldScoreLow = scoreLow;
+  oldScoreMid = scoreMid;
+  oldScoreHi = scoreHi;
+  
+  //Réinitialiser les valeurs
+  scoreLow = 0;
+  scoreMid = 0;
+  scoreHi = 0;
+  //shapeX(int(X),int(Y));
+ 
+//Calculer les nouveaux "scores"
+  for(int i = 0; i < 3; i++){
+     
+    if(speedX >= 15 ){
+       speedX = speedX-random(1,7);  
+    }  
+    if(speedX <= -15 ){
+       speedX = speedX+random(1,7);
+    }
+    if( speedY >= 15  ){
+       speedY = speedY-random(1,7); 
+    }
+    if( speedY <= -15  ){
+       speedY = speedY+random(1,7); 
+    }
+   
+    Y = Y+ speedY;
+    X = X + speedX;
+
+    speedX = speedX + gravity ;
+    speedY = speedY + gravity;
+    
+    if(Y>=height){
+      speedY = (speedY*-2.0);
+    }
+    if(Y<=0){
+      speedY = (speedY*-2.0);
+    }
+    if(X>=width){
+      speedX = (speedX*-2.0);
+    }
+    if(X<=0){
+      speedX = (speedX*-2.0);
+    }
+
+    float scalar = sin(angle)+2;
+    float R = map(scalar,1,3,0,220);
+    float G = map(scalar,1,3,10,120);
+    float B = map(scalar,1,3,220,20);
+    fill(R,G,B);
+   // strokeWeight(abs(1.1/scalar));
+    strokeWeight( (fft.getBand(i)/100)+1);
+    ellipse( X,Y, groove.left.get(i)*200, groove.left.get(i)*200);
+     angle += groove.right.get(i);
+
+    //rect(X,Y, groove.left.get(i)*200, groove.left.get(i)*200);
+   
+   //pushMatrix();
+   //translate(X,Y, 0);
+   //rotateY(groove.left.get(i)*10);
+   //rotateX(-groove.right.get(i)*10);
+   //box(groove.left.get(i)*400);
+   //popMatrix();
+
+  }
+
+}
+
+
+
+
+
+
+
+
+
+
 ///////////////////////////////////////////////////////////////////////////////////
